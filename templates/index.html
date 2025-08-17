@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Story Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+    }
+    .container {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
+      width: 400px;
+      text-align: center;
+    }
+    input, button {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+    }
+    button {
+      background: #007bff;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎬 Video Story Generator</h2>
+    <form id="uploadForm">
+      <label>Upload Video (.mp4)</label>
+      <input type="file" id="video" name="video" accept="video/mp4" required>
+
+      <label>Upload Text (.txt)</label>
+      <input type="file" id="text" name="text" accept=".txt" required>
+
+      <button type="submit">Generate Story Video</button>
+    </form>
+    <p id="status"></p>
+    <a id="downloadLink" style="display:none;" download="final_story.mp4">⬇️ Download Final Video</a>
+  </div>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const status = document.getElementById("status");
+    const downloadLink = document.getElementById("downloadLink");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      status.textContent = "⏳ Processing... Please wait.";
+      downloadLink.style.display = "none";
+
+      const formData = new FormData();
+      formData.append("video", document.getElementById("video").files[0]);
+      formData.append("text", document.getElementById("text").files[0]);
+
+      try {
+        const response = await fetch("/process", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error("Processing failed!");
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        downloadLink.href = url;
+        downloadLink.style.display = "block";
+        status.textContent = "✅ Done! Click below to download.";
+      } catch (err) {
+        status.textContent = "❌ Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
