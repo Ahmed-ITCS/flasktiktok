@@ -1,2 +1,2 @@
-    [start]
-    cmd = "python appp.py"
+[start]
+cmd = "python appp.py"
