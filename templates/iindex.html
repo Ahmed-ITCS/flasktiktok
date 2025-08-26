@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Story Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+    .hover-scale {
+      transition: transform 0.3s ease;
+    }
+    .hover-scale:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 min-h-screen flex items-center justify-center">
+  <div class="container mx-auto px-4 py-12 max-w-4xl">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-center text-gray-800 mb-10 fade-in">
+      🎬 Video Story Generator
+    </h1>
+
+    <!-- Case 1: Upload video + transcript -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 hover-scale fade-in">
+      <h4 class="text-2xl font-semibold text-gray-700 mb-6">Upload Video + Transcript</h4>
+      <form action="/process" method="post" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Video File (MP4)</label>
+          <input type="file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors" name="video" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Transcript File (TXT)</label>
+          <input type="file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors" name="text" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Voice</label>
+          <select class="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" name="voice_id" required>
+            {% for voice in voices %}
+              <option value="{{ voice.voice_id }}">{{ voice.name }} ({{ voice.labels.accent or '' }} {{ voice.labels.gender or '' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Generate</button>
+      </form>
+    </div>
+
+    <!-- Case 2: YouTube link + transcript -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 hover-scale fade-in">
+      <h4 class="text-2xl font-semibold text-gray-700 mb-6">YouTube Link + Transcript</h4>
+      <form action="/process_youtube" method="post" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">YouTube URL</label>
+          <input type="url" class="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" name="youtube_url" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Transcript File (TXT)</label>
+          <input type="file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 transition-colors" name="text" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Voice</label>
+          <select class="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" name="voice_id" required>
+            {% for voice in voices %}
+              <option value="{{ voice.voice_id }}">{{ voice.name }} ({{ voice.labels.accent or '' }} {{ voice.labels.gender or '' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="w-full py-3 px-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">Generate</button>
+      </form>
+    </div>
+
+    <!-- Case 3: Multiple YouTube links + transcript -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 hover-scale fade-in">
+      <h4 class="text-2xl font-semibold text-gray-700 mb-6">Multiple YouTube Links + Transcript</h4>
+      <form action="/process_youtube_multiple" method="post" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">YouTube URLs (comma-separated)</label>
+          <input type="text" class="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" name="youtube_urls" placeholder="url1, url2, url3" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Transcript File (TXT)</label>
+          <input type="file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100 transition-colors" name="text" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-2">Voice</label>
+          <select class="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" name="voice_id" required>
+            {% for voice in voices %}
+              <option value="{{ voice.voice_id }}">{{ voice.name }} ({{ voice.labels.accent or '' }} {{ voice.labels.gender or '' }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="w-full py-3 px-4 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">Generate</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

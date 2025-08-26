@@ -1,97 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Video Story Generator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px;
-    }
-    .container {
-      background: white;
-      padding: 20px 30px;
-      border-radius: 12px;
-      box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
-      width: 400px;
-      text-align: center;
-    }
-    input, button {
-      margin: 10px 0;
-      padding: 10px;
-      width: 100%;
-    }
-    button {
-      background: #007bff;
-      border: none;
-      color: white;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 8px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    #status {
-      margin-top: 20px;
-      font-weight: bold;
-      color: #333;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Video + TTS (Synced Captions)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="container">
-    <h2>🎬 Video Story Generator</h2>
-    <form id="uploadForm">
-      <label>Upload Video (.mp4)</label>
-      <input type="file" id="video" name="video" accept="video/mp4" required>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+  <div class="max-w-3xl mx-auto p-6">
+    <h1 class="text-3xl md:text-4xl font-extrabold text-center text-gray-800 mb-8">
+      🎬 Generate Voiceover + Synced Captions
+    </h1>
 
-      <label>Upload Text (.txt)</label>
-      <input type="file" id="text" name="text" accept=".txt" required>
+    <form id="form" class="bg-white shadow-xl rounded-2xl p-6 space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Video (MP4)</label>
+        <input name="video" type="file" accept="video/mp4" required
+               class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+      </div>
 
-      <button type="submit">Generate Story Video</button>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Transcript (.txt)</label>
+        <input name="text" type="file" accept=".txt" required
+               class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">ElevenLabs Voice</label>
+        <select name="voice_id" required
+                class="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          {% if voices and voices|length > 0 %}
+            {% for v in voices %}
+              <option value="{{ v.voice_id }}">{{ v.name }}</option>
+            {% endfor %}
+          {% else %}
+            <!-- Fallback to a known public voice id; replace with your own if needed -->
+            <option value="21m00Tcm4TlvDq8ikWAM">Rachel (example)</option>
+          {% endif %}
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Tip: To use your own cloned voice, copy its Voice ID from ElevenLabs → Voices.</p>
+      </div>
+
+      <button id="submitBtn" type="submit"
+              class="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
+        Generate & Download
+      </button>
+
+      <div id="status" class="text-sm text-gray-600"></div>
     </form>
-    <p id="status"></p>
-    <a id="downloadLink" style="display:none;" download="final_story.mp4">⬇️ Download Final Video</a>
+
+    <div id="preview" class="mt-8 hidden">
+      <h2 class="text-xl font-semibold mb-3 text-gray-800">Preview</h2>
+      <video id="videoEl" class="w-full rounded-xl shadow-md" controls></video>
+      <p class="text-xs text-gray-500 mt-2">The video also downloaded automatically.</p>
+    </div>
   </div>
 
   <script>
-    const form = document.getElementById("uploadForm");
-    const status = document.getElementById("status");
-    const downloadLink = document.getElementById("downloadLink");
+    const form = document.getElementById("form");
+    const statusEl = document.getElementById("status");
+    const submitBtn = document.getElementById("submitBtn");
+    const previewWrap = document.getElementById("preview");
+    const videoEl = document.getElementById("videoEl");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
-      status.textContent = "⏳ Processing... Please wait.";
-      downloadLink.style.display = "none";
-
-      const formData = new FormData();
-      formData.append("video", document.getElementById("video").files[0]);
-      formData.append("text", document.getElementById("text").files[0]);
+      statusEl.textContent = "Processing… this may take a bit depending on video length.";
+      submitBtn.disabled = true;
 
       try {
-        const response = await fetch("/process", {
-          method: "POST",
-          body: formData
-        });
+        const fd = new FormData(form);
+        const res = await fetch("/process", { method: "POST", body: fd });
 
-        if (!response.ok) {
-          throw new Error("Processing failed!");
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || "Request failed");
         }
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+        // Receive the final MP4 and auto-download
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
 
-        downloadLink.href = url;
-        downloadLink.style.display = "block";
-        status.textContent = "✅ Done! Click below to download.";
+        // Auto-download
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "final_story.mp4";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        // Show inline preview too
+        videoEl.src = url;
+        previewWrap.classList.remove("hidden");
+        statusEl.textContent = "Done! Your video has downloaded.";
       } catch (err) {
-        status.textContent = "❌ Error: " + err.message;
+        statusEl.textContent = "Error: " + (err?.message || err);
+      } finally {
+        submitBtn.disabled = false;
       }
     });
   </script>
